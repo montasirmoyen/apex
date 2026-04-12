@@ -48,6 +48,14 @@ class EnsembleLongShortStrategy(Strategy):
     def supports_cross_sectional(self) -> bool:
         return True
 
+    def generate_signals(self, data: pd.DataFrame) -> float:
+        """Compatibility shim for the scalar strategy interface.
+
+        This strategy is designed for cross-sectional portfolio construction,
+        so scalar signal generation is intentionally a no-op.
+        """
+        return 0.0
+
     def generate_target_weights(
         self,
         date: pd.Timestamp,
