@@ -11,50 +11,64 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const scriptPath = path.join(process.cwd(), "backend", "quick_sim.py")
+  const encoder = new TextEncoder()
 
-  return new Promise<NextResponse>((resolve) => {
-    const python = spawn("python3", [scriptPath], { cwd: process.cwd() })
+  const stream = new ReadableStream({
+    start(controller) {
+      const python = spawn("python3", [scriptPath], { cwd: process.cwd() })
 
-    let stdout = ""
-    let stderr = ""
+      python.stdin.write(JSON.stringify(body))
+      python.stdin.end()
 
-    python.stdin.write(JSON.stringify(body))
-    python.stdin.end()
+      let buffer = ""
+      let stderrBuf = ""
 
-    python.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString()
-    })
-    python.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString()
-    })
-
-    python.on("close", (code) => {
-      if (code !== 0) {
-        const message = stderr.trim() || "Python process exited with code " + code
-        resolve(NextResponse.json({ error: message }, { status: 500 }))
-        return
-      }
-      try {
-        const result = JSON.parse(stdout)
-        if (result.error) {
-          resolve(NextResponse.json({ error: result.error }, { status: 500 }))
-        } else {
-          resolve(NextResponse.json(result))
+      python.stdout.on("data", (chunk: Buffer) => {
+        buffer += chunk.toString()
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+        for (const line of lines) {
+          if (line.trim()) {
+            controller.enqueue(encoder.encode(line + "\n"))
+          }
         }
-      } catch {
-        resolve(
-          NextResponse.json({ error: "Could not parse Python output" }, { status: 500 }),
-        )
-      }
-    })
+      })
 
-    python.on("error", (err) => {
-      resolve(
-        NextResponse.json(
-          { error: "Failed to start Python: " + err.message },
-          { status: 500 },
-        ),
-      )
-    })
+      python.stderr.on("data", (chunk: Buffer) => {
+        stderrBuf += chunk.toString()
+      })
+
+      python.on("close", (code) => {
+        // flush any remaining buffered output
+        if (buffer.trim()) {
+          controller.enqueue(encoder.encode(buffer + "\n"))
+        }
+        if (code !== 0) {
+          const msg = stderrBuf.trim() || `Python process exited with code ${code}`
+          controller.enqueue(
+            encoder.encode(JSON.stringify({ type: "error", message: msg }) + "\n"),
+          )
+        }
+        controller.close()
+      })
+
+      python.on("error", (err) => {
+        controller.enqueue(
+          encoder.encode(
+            JSON.stringify({ type: "error", message: "Failed to start Python: " + err.message }) +
+              "\n",
+          ),
+        )
+        controller.close()
+      })
+    },
+  })
+
+  return new NextResponse(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
   })
 }
