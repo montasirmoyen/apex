@@ -10,6 +10,11 @@ const font = Outfit({
   variable: "--font-outfit",
 })
 
+export const metadata = {
+  title: "ASV - Apex Stock View",
+  description: "A quant tool for visualizing stock data and backtesting trading strategies.",
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
