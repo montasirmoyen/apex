@@ -1,4 +1,5 @@
 import { spawn } from "child_process"
+import fs from "fs"
 import path from "path"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -11,11 +12,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const scriptPath = path.join(process.cwd(), "backend", "quick_sim.py")
+  const venvPythonPath = path.join(process.cwd(), "backend", ".venv", "bin", "python")
+  const pythonExecutable = fs.existsSync(venvPythonPath) ? venvPythonPath : "python3"
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
     start(controller) {
-      const python = spawn("python3", [scriptPath], { cwd: process.cwd() })
+      const python = spawn(pythonExecutable, [scriptPath], { cwd: process.cwd() })
 
       python.stdin.write(JSON.stringify(body))
       python.stdin.end()
