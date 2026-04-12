@@ -1,14 +1,13 @@
-import { Geist, Geist_Mono, DM_Sans } from "next/font/google"
+import { Outfit } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
-const dmSans = DM_Sans({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
+const font = Outfit({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-outfit",
 })
 
 export default function RootLayout({
@@ -20,10 +19,16 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", dmSans.variable)}
+      className={cn("antialiased", font.variable, "font-outfit")}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+              <main>
+                {children}
+              </main>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
