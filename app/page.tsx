@@ -1,20 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   IconBolt,
   IconTrendingUp,
   IconTrendingDown,
   IconChartBar,
   IconAlertCircle,
+  IconTerminal2,
+  IconPlayerSkipForward,
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { EquityChart } from "@/components/chart-1"
 import { StrategyForm } from "@/components/strategy-form"
-import { runSimulation } from "@/lib/api"
+import { runSimulationStream } from "@/lib/api"
 import { QUICK_PRESET } from "@/types/simulation"
 import type { SimulationRequest, SimulationResult } from "@/types/simulation"
 
@@ -65,13 +69,28 @@ export default function Page() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastRequest, setLastRequest] = useState<SimulationRequest>(QUICK_PRESET)
+  const [logs, setLogs] = useState<string[]>([])
+  const [speedUp, setSpeedUp] = useState(false)
+  const logEndRef = useRef<HTMLDivElement>(null)
 
   async function simulate(req: SimulationRequest) {
     setLoading(true)
     setError(null)
+    setResult(null)
+    setLogs([])
     setLastRequest(req)
     try {
-      const data = await runSimulation(req)
+      const data = await runSimulationStream(
+        { ...req, speed_up: speedUp },
+        (msg) => {
+          setLogs((prev) => {
+            const next = [...prev, msg]
+            // scroll to bottom on next paint
+            setTimeout(() => logEndRef.current?.scrollIntoView({ behavior: "smooth" }), 0)
+            return next
+          })
+        },
+      )
       setResult(data)
     } catch (err) {
       setError((err as Error).message)
@@ -98,15 +117,32 @@ export default function Page() {
             Backtester V1
           </Badge>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5 text-xs"
-          disabled={loading}
-          onClick={() => simulate(QUICK_PRESET)}
-        >
-          <IconBolt className="size-3.5" />
-          {loading ? "RUNNING…" : "QUICK SIMULATION"}
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="speed-up"
+              checked={speedUp}
+              onCheckedChange={setSpeedUp}
+              disabled={loading}
+            />
+            <Label
+              htmlFor="speed-up"
+              className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground"
+            >
+              <IconPlayerSkipForward className="size-3.5" />
+              SPEED UP
+            </Label>
+          </div>
+          <Button
+            size="sm"
+            className="gap-1.5 text-xs"
+            disabled={loading}
+            onClick={() => simulate(QUICK_PRESET)}
+          >
+            <IconBolt className="size-3.5" />
+            {loading ? "RUNNING…" : "QUICK SIMULATION"}
+          </Button>
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col gap-6 p-6">
@@ -118,8 +154,45 @@ export default function Page() {
           </div>
         )}
 
-        {/* Loading */}
-        {loading && (
+        {/* Terminal output */}
+        {(logs.length > 0 || loading) && (
+          <Card>
+            <CardHeader className="border-b pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-xs uppercase tracking-widest">
+                  <IconTerminal2 className="size-4" />
+                  TERMINAL OUTPUT
+                </CardTitle>
+                {loading && (
+                  <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <span className="size-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                    LIVE
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-3 pb-2">
+              <div className="max-h-44 overflow-y-auto rounded bg-black/60 px-3 py-2 font-mono text-xs">
+                {logs.map((line, i) => (
+                  <div key={i} className="flex gap-2 leading-5">
+                    <span className="select-none text-green-600">›</span>
+                    <span className="text-green-400">{line}</span>
+                  </div>
+                ))}
+                {loading && (
+                  <div className="flex gap-2 leading-5">
+                    <span className="select-none text-green-600">›</span>
+                    <span className="animate-pulse text-muted-foreground">_</span>
+                  </div>
+                )}
+                <div ref={logEndRef} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Legacy loading indicator (shown only before first log arrives) */}
+        {loading && logs.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 py-16">
             <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="text-xs text-muted-foreground">
@@ -132,7 +205,7 @@ export default function Page() {
         {!loading && !result && !error && (
           <div className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
             <div className="flex flex-col items-center gap-2">
-              <IconChartBar className="size-10 text-muted-foreground/40" />
+              <IconChartBar className="size-10 text-muted-foreground" />
               <h2 className="text-sm font-medium">NO SIMULATION DATA</h2>
               <p className="max-w-sm text-xs text-muted-foreground">
                 Click{" "}
