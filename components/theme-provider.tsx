@@ -90,7 +90,7 @@ function applyTheme({
 function ThemeProvider({
   children,
   attribute = "class",
-  defaultTheme = "system",
+  defaultTheme = "dark",
   disableTransitionOnChange = true,
   enableSystem = true,
   storageKey = STORAGE_KEY,
