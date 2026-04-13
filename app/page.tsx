@@ -111,11 +111,8 @@ export default function Page() {
         <div className="flex items-center gap-3">
           <IconChartBar className="size-5 text-primary" />
           <span className="text-sm font-semibold tracking-widest">
-            ASV <span className="text-muted-foreground">-</span> APEX STOCK VIEW
+            STOCK VIEW
           </span>
-          <Badge variant="outline" className="text-[10px] uppercase">
-            Backtester V1
-          </Badge>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -208,7 +205,7 @@ export default function Page() {
               <IconChartBar className="size-10 text-muted-foreground" />
               <h2 className="text-sm font-medium">NO SIMULATION DATA</h2>
               <p className="max-w-sm text-xs text-muted-foreground">
-                Click{" "}
+                Run a{" "}
                 <span className="rounded border px-1 text-foreground">
                   QUICK SIMULATION
                 </span>{" "}
@@ -216,19 +213,6 @@ export default function Page() {
                 below to customise your strategy.
               </p>
             </div>
-            <Button
-              size="lg"
-              className="gap-2 text-sm"
-              disabled={loading}
-              onClick={() => simulate(QUICK_PRESET)}
-            >
-              <IconBolt className="size-4" />
-              QUICK SIMULATION
-            </Button>
-            <p className="text-[10px] text-muted-foreground">
-              PRESET: {QUICK_PRESET.tickers.join(", ")} · {QUICK_PRESET.strategy.toUpperCase()} ·{" "}
-              {QUICK_PRESET.start_date} → {QUICK_PRESET.end_date}
-            </p>
           </div>
         )}
 
