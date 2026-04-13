@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Navbar } from "@/components/navbar"
 
 const font = Outfit({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
               <main>
+                <Navbar />
                 {children}
               </main>
           </TooltipProvider>
