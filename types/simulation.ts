@@ -34,7 +34,7 @@ export interface SimulationResult {
 
 // preset used by the quick simulation button
 export const QUICK_PRESET: SimulationRequest = {
-  tickers: ["AAPL", "MSFT", "GOOGL"],
+  tickers: ["NVDA", "TSLA"],
   strategy: "momentum",
   lookback: 20,
   initial_cash: 100_000,
