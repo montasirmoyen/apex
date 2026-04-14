@@ -101,7 +101,7 @@ const Navbar = ({
   };
 
   return (
-    <section className={cn("py-4", className)}>
+    <section className={cn("py-4 bg-card", className)}>
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Desktop Menu */}
         <nav className="hidden w-full items-center justify-between gap-8 lg:flex">
