@@ -107,7 +107,7 @@ export default function Page() {
   return (
     <div className="flex min-h-svh flex-col gap-0">
       {/* Terminal */}
-      <header className="flex items-center justify-between border-b bg-card px-6 py-3">
+      <header className="flex items-center justify-between border-b bg-card px-12 py-3">
         <div className="flex items-center gap-3">
           <IconChartBar className="size-5 text-primary" />
           <span className="text-sm font-semibold tracking-widest">
