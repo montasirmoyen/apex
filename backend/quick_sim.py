@@ -38,6 +38,8 @@ _STRATEGY_MAP = {
     "ml_ensemble": EnsembleLongShortStrategy,
 }
 
+_WARMUP_BARS = 100
+
 def _log(message: str) -> None:
     """Emit a progress line to stdout immediately."""
     print(json.dumps({"type": "log", "message": message}), flush=True)
@@ -121,6 +123,15 @@ def run_quick_simulation(request: dict) -> None:
     end_date: str = request.get("end_date", "2024-01-01")
     use_regime: bool = bool(request.get("use_regime", False))
     speed_up: bool = bool(request.get("speed_up", False))
+    start_ts = pd.to_datetime(start_date)
+    end_ts = pd.to_datetime(end_date)
+
+    if end_ts < start_ts:
+        raise ValueError("end_date must be on or after start_date.")
+
+    # Fetch additional history before the requested start date so rolling
+    # features (especially for ML ensemble) can warm up before trading begins.
+    warmup_start = (start_ts - pd.tseries.offsets.BDay(_WARMUP_BARS)).strftime("%Y-%m-%d")
 
     delay = 0.0 if speed_up else 0.55
 
@@ -131,6 +142,7 @@ def run_quick_simulation(request: dict) -> None:
     time.sleep(delay)
 
     _log(f"Date range: {start_date} → {end_date}")
+    _log(f"Warm-up history: {warmup_start} → {start_date} (excluded from results)")
     time.sleep(delay * 0.5)
 
     strategy = strategy_cls(lookback=lookback)
@@ -146,7 +158,7 @@ def run_quick_simulation(request: dict) -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         for i, ticker in enumerate(tickers, 1):
             _log(f"  [{i}/{len(tickers)}] Requesting market data for {ticker}…")
-            df, live_price = _fetch_ohlcv_and_live_price(ticker, start_date, end_date)
+            df, live_price = _fetch_ohlcv_and_live_price(ticker, warmup_start, end_date)
             df.to_csv(os.path.join(tmpdir, f"{ticker}.csv"))
             latest_close = float(df["Close"].iloc[-1])
             if live_price is not None:
@@ -171,6 +183,8 @@ def run_quick_simulation(request: dict) -> None:
             strategy=strategy,
             initial_cash=initial_cash,
             regime_detector=regime_detector,
+            start_date=start_date,
+            end_date=end_date,
         )
 
     _log("Computing risk metrics (Sharpe, max drawdown, IC…)")

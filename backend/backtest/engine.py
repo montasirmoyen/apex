@@ -16,6 +16,8 @@ def run_backtest(
     strategy: Strategy,
     initial_cash: float = 100_000.0,
     regime_detector: Optional[RegimeDetector] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run a day-by-day backtest over historical OHLCV data.
 
@@ -53,6 +55,15 @@ def run_backtest(
         raise ValueError("No overlapping dates found across the provided tickers.")
 
     common_dates = all_closes.index
+    if start_date is not None:
+        start_ts = pd.to_datetime(start_date)
+        common_dates = common_dates[common_dates >= start_ts]
+    if end_date is not None:
+        end_ts = pd.to_datetime(end_date)
+        common_dates = common_dates[common_dates <= end_ts]
+
+    if len(common_dates) == 0:
+        raise ValueError("No dates available in the requested backtest window.")
     portfolio = Portfolio(tickers=tickers, initial_cash=initial_cash)
     cost_model = CostModel(slippage_bps=1.0, commission_per_trade=1.0, impact_eta=0.06)
     is_cross_sectional = strategy.supports_cross_sectional()
