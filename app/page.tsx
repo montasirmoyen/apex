@@ -1,24 +1,20 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
-  IconBolt,
   IconTrendingUp,
   IconTrendingDown,
   IconChartBar,
   IconAlertCircle,
   IconTerminal2,
-  IconPlayerSkipForward,
 } from "@tabler/icons-react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { EquityChart } from "@/components/chart-1"
 import { StrategyForm } from "@/components/strategy-form"
 import { runSimulationStream } from "@/lib/api"
+import { QUICK_SIM_EVENT, SPEED_UP_CHANGE_EVENT } from "@/lib/simulation-events"
 import { QUICK_PRESET } from "@/types/simulation"
 import type { SimulationRequest, SimulationResult } from "@/types/simulation"
 
@@ -71,7 +67,31 @@ export default function Page() {
   const [lastRequest, setLastRequest] = useState<SimulationRequest>(QUICK_PRESET)
   const [logs, setLogs] = useState<string[]>([])
   const [speedUp, setSpeedUp] = useState(false)
+  const speedUpRef = useRef(false)
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    speedUpRef.current = speedUp
+  }, [speedUp])
+
+  useEffect(() => {
+    const onQuickSim = () => {
+      void simulate(QUICK_PRESET)
+    }
+
+    const onSpeedUpChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ speedUp?: boolean }>
+      setSpeedUp(Boolean(customEvent.detail?.speedUp))
+    }
+
+    window.addEventListener(QUICK_SIM_EVENT, onQuickSim)
+    window.addEventListener(SPEED_UP_CHANGE_EVENT, onSpeedUpChange as EventListener)
+
+    return () => {
+      window.removeEventListener(QUICK_SIM_EVENT, onQuickSim)
+      window.removeEventListener(SPEED_UP_CHANGE_EVENT, onSpeedUpChange as EventListener)
+    }
+  }, [])
 
   async function simulate(req: SimulationRequest) {
     setLoading(true)
@@ -81,7 +101,7 @@ export default function Page() {
     setLastRequest(req)
     try {
       const data = await runSimulationStream(
-        { ...req, speed_up: speedUp },
+        { ...req, speed_up: speedUpRef.current },
         (msg) => {
           setLogs((prev) => {
             const next = [...prev, msg]
@@ -106,42 +126,6 @@ export default function Page() {
 
   return (
     <div className="flex min-h-svh flex-col gap-0">
-      {/* Terminal */}
-      <header className="flex items-center justify-between border-b bg-card px-12 py-3">
-        <div className="flex items-center gap-3">
-          <IconChartBar className="size-5 text-primary" />
-          <span className="text-sm font-semibold tracking-widest">
-            STOCK VIEW
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="speed-up"
-              checked={speedUp}
-              onCheckedChange={setSpeedUp}
-              disabled={loading}
-            />
-            <Label
-              htmlFor="speed-up"
-              className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground"
-            >
-              <IconPlayerSkipForward className="size-3.5" />
-              SPEED UP
-            </Label>
-          </div>
-          <Button
-            size="sm"
-            className="gap-1.5 text-xs"
-            disabled={loading}
-            onClick={() => simulate(QUICK_PRESET)}
-          >
-            <IconBolt className="size-3.5" />
-            {loading ? "RUNNING…" : "QUICK SIMULATION"}
-          </Button>
-        </div>
-      </header>
-
       <div className="flex flex-1 flex-col gap-6 p-6">
         {/* Error */}
         {error && (
