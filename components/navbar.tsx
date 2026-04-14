@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Menu, Zap, LogOut, User } from "lucide-react";
 
 import {
@@ -25,8 +26,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { QUICK_SIM_EVENT, SPEED_UP_CHANGE_EVENT } from "@/lib/simulation-events";
+import { usePathname, useRouter } from "next/navigation";
 
 interface MenuItem {
   title: string;
@@ -89,6 +93,10 @@ const Navbar = ({
   const loading = false; // Replace with actual loading state
   const signOut = async () => {}; // Replace with actual sign out function
   const router = useRouter();
+  const pathname = usePathname();
+  const [speedUp, setSpeedUp] = useState(false);
+
+  const isSimulationPage = useMemo(() => pathname === "/", [pathname]);
 
   const filteredMenu = menu.filter(
     (item) => !item.authRequired || user
@@ -98,6 +106,17 @@ const Navbar = ({
     await signOut();
     // Use Next.js router to avoid a full page reload (maintains SPA state)
     router.push("/");
+  };
+
+  const handleQuickSimulation = () => {
+    window.dispatchEvent(new CustomEvent(QUICK_SIM_EVENT));
+  };
+
+  const handleSpeedUpToggle = (checked: boolean) => {
+    setSpeedUp(checked);
+    window.dispatchEvent(
+      new CustomEvent(SPEED_UP_CHANGE_EVENT, { detail: { speedUp: checked } })
+    );
   };
 
   return (
@@ -122,6 +141,34 @@ const Navbar = ({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 pl-6">
+            {isSimulationPage && (
+              <>
+                <span className="text-xs font-semibold tracking-widest text-muted-foreground">
+                  STOCK VIEW
+                </span>
+                <div className="flex items-center gap-2 pr-1">
+                  <Switch
+                    id="navbar-speed-up"
+                    checked={speedUp}
+                    onCheckedChange={handleSpeedUpToggle}
+                  />
+                  <Label
+                    htmlFor="navbar-speed-up"
+                    className="cursor-pointer text-xs text-muted-foreground"
+                  >
+                    SPEED UP
+                  </Label>
+                </div>
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={handleQuickSimulation}
+                >
+                  <Zap className="size-4" />
+                  QUICK SIMULATION
+                </Button>
+              </>
+            )}
             {loading ? null : user ? (
               <>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -181,6 +228,30 @@ const Navbar = ({
                   </Accordion>
 
                   <div className="flex flex-col gap-3">
+                      {isSimulationPage && (
+                        <div className="rounded-md border bg-muted/40 p-3">
+                          <div className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground">
+                            STOCK VIEW
+                          </div>
+                          <div className="mb-3 flex items-center gap-2">
+                            <Switch
+                              id="navbar-speed-up-mobile"
+                              checked={speedUp}
+                              onCheckedChange={handleSpeedUpToggle}
+                            />
+                            <Label
+                              htmlFor="navbar-speed-up-mobile"
+                              className="cursor-pointer text-xs text-muted-foreground"
+                            >
+                              SPEED UP
+                            </Label>
+                          </div>
+                          <Button className="w-full gap-1.5 text-xs" onClick={handleQuickSimulation}>
+                            <Zap className="size-4" />
+                            QUICK SIMULATION
+                          </Button>
+                        </div>
+                      )}
                     {loading ? null : user ? (
                       <>
                         <div className="flex items-center gap-2 text-sm">
