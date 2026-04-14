@@ -143,9 +143,6 @@ const Navbar = ({
           <div className="flex shrink-0 items-center gap-2 pl-6">
             {isSimulationPage && (
               <>
-                <span className="text-xs font-semibold tracking-widest text-muted-foreground">
-                  STOCK VIEW
-                </span>
                 <div className="flex items-center gap-2 pr-1">
                   <Switch
                     id="navbar-speed-up"
@@ -230,9 +227,6 @@ const Navbar = ({
                   <div className="flex flex-col gap-3">
                       {isSimulationPage && (
                         <div className="rounded-md border bg-muted/40 p-3">
-                          <div className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground">
-                            STOCK VIEW
-                          </div>
                           <div className="mb-3 flex items-center gap-2">
                             <Switch
                               id="navbar-speed-up-mobile"
